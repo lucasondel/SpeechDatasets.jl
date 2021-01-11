@@ -31,7 +31,7 @@ function filter_pronun(p)
 end
 
 function filter_phone(p)
-    if p == '!' return UNK  end
+    if p == '!' return UNK end
     if p == '.' return SIL end
     p
 end
