@@ -5,14 +5,16 @@ using StringEncodings
 
 const URL = "https://github.com/besacier/mboshi-french-parallel-corpus.git"
 const LOCALDIR = "local"
+const SIL = "<sil>"
+const UNK = "<unk>"
 
 function filter_word(w)
     if w == "</s>"
-        return "<sil>"
+        return SIL
     elseif w == "<UNK>"
-        return "<unk>"
+        return UNK
     elseif w == "[silence]"
-        return "<sil>"
+        return SIL
     else
         return w
     end
@@ -20,21 +22,21 @@ end
 
 function filter_pronun(p)
     if p == "."
-        return ["<sil>"]
+        return [SIL]
     elseif p == "!!"
-        return ["<unk>"]
+        return [UNK]
     else
         return ["$c" for c in p]
     end
 end
 
 function filter_phone(p)
-    if p == '!' return "<sil>"  end
-    if p == '.' return "<sil>" end
+    if p == '!' return UNK  end
+    if p == '.' return SIL end
     p
 end
 
-isspeechunit(u) = u != "<sil>" && u != "<unk>"
+isspeechunit(u) = u != SIL && u != UNK
 
 function prepare(datadir; force = false)
     mkpath(joinpath(datadir, LOCALDIR))
@@ -72,11 +74,54 @@ function prepare(datadir; force = false)
     end
 
     ###################################################################
-    # Prepare each set
-
-    utt2spk = Dict()
+    # Extract the forced alignments of the data + lexicon
     lexicon = Set()
     phones = Set()
+    alifile = joinpath(repopath, "forced_alignments_supervised_spkr",
+                       "limsi-align", "trn0.seg")
+    full_ali_file = joinpath(datadir, LOCALDIR, "full_ali")
+    open(full_ali_file, "w") do f_ali
+        open(alifile, enc"latin1", "r") do f
+            uttid = ""
+            phn_stack = []
+            for line in eachline(f)
+                if startswith(line, "#@ sid")
+                    if uttid ≠ "" println(f_ali) end
+                    uttid = split(split(line, "=")[2], ".")[1]
+                    print(f_ali, uttid)
+                elseif startswith(line, "#@ word")
+                    tokens = split(line)
+                    phn_stack = [c for c in tokens[4]]
+                    word = filter_word(split(tokens[2], "=")[2])
+                    pronun = filter_pronun(tokens[4])
+                    push!(phones, pronun...)
+                    push!(lexicon, (word, pronun))
+                elseif ! startswith(line, "#")
+                    label = filter_phone(popfirst!(phn_stack))
+                    tokens = split(line)
+                    s1, s2, s3 = tokens[5:7]
+                    duration = parse(Int, s1) + parse(Int, s2) + parse(Int, s3)
+                    for i in 1:duration
+                        print(f_ali, " ", label)
+                    end
+                end
+            end
+        end
+    end
+
+    full_ali = Dict()
+    open(full_ali_file, "r") do f
+        for line in eachline(f)
+            tokens = split(line)
+            uttid = tokens[1]
+            ali = join(tokens[2:end], " ")
+            full_ali[uttid] = ali
+        end
+    end
+
+    ###################################################################
+    # Prepare each set
+
     for set in ["dev", "train"]
         @info "Preparing $set set..."
 
@@ -84,7 +129,24 @@ function prepare(datadir; force = false)
 
         wavdir = joinpath(repopath, "full_corpus_newsplit", set)
         wavs = filter(x -> endswith(x, "wav"), readdir(wavdir))
-        uttids = map(x -> replace(x, ".wav" => ""), wavs)
+
+        # Extract uttids and speakers labels
+        uttids = []
+        speakers = Set{String}()
+        utt2spk = Dict()
+        utt2wav = Dict()
+        for fname in wavs
+            tokens = split(replace(fname, ".wav" => ""), "_")
+            speaker = tokens[1]
+            uttid = join(tokens[2:end], "_")
+            push!(uttids, uttid)
+            push!(speakers, speaker)
+            utt2spk[uttid] = speaker
+            utt2wav[uttid] = abspath(fname)
+        end
+
+        uttids = sort(uttids)
+        speakers = sort([s for s in speakers])
 
         # uttids
         open(joinpath(setdir, "uttids"), "w") do f
@@ -93,64 +155,35 @@ function prepare(datadir; force = false)
 
         # wav.scp
         open(joinpath(setdir, "wav.scp"), "w") do f
-            for (uttid, wav) in zip(uttids, wavs)
-                println(f, "$uttid $(abspath(wav))")
-            end
+            for uttid in uttids println(f, uttid, " ", utt2wav[uttid]) end
         end
 
         # uttids_speakers
-        speakers = Set{String}()
         open(joinpath(setdir, "uttids_speakers"), "w") do f
-            for uttid in uttids
-                tokens = split(uttid, "_")
-                push!(speakers, tokens[1])
-                utt2spk[join(split(uttid, "_")[2:end], "_")] = tokens[1]
-                println(f, uttid, " ", tokens[1])
-            end
+            for uttid in uttids println(f, uttid, " ", utt2spk[uttid]) end
         end
+
+        # speakers
         open(joinpath(setdir, "speakers"), "w") do f
-            for s in speakers
-                println(f, s)
-            end
+            for s in speakers println(f, s) end
+        end
+
+        # ali
+        open(joinpath(setdir, "ali"), "w") do f
+            for uttid in uttids println(f, uttid, " ", full_ali[uttid]) end
         end
 
         # trans.wrd
         open(joinpath(setdir, "trans.wrd"), "w") do f
             for uttid in uttids
-                open(joinpath(wavdir, "$(uttid).mb.cleaned"), "r") do f2
+                speaker = utt2spk[uttid]
+                fname = "$(join([speaker, uttid], "_")).mb.cleaned"
+                open(joinpath(wavdir, fname), "r") do f2
                     println(f, uttid, " ", readline(f2))
                 end
             end
         end
 
-        ###############################################################
-        # Extract words / phones for the lexicon
-        name = set == "train" ? "trn0.seg" : "dev0.seg"
-        alifile = joinpath(repopath, "forced_alignments_supervised_spkr",
-                           "limsi-align", name)
-        open(alifile, "r") do f
-            for line in eachline(f)
-                if startswith(line, "#@ word")
-                    tokens = split(line)
-                    word = filter_word(split(tokens[2], "=")[2])
-                    pronun = filter_pronun(tokens[4])
-                    push!(phones, pronun...)
-                    push!(lexicon, (word, pronun))
-                end
-            end
-        end
-
-        open(alifile, "r") do f
-            for line in eachline(f)
-                if startswith(line, "#@ word")
-                    tokens = split(line)
-                    word = filter_word(split(tokens[2], "=")[2])
-                    pronun = filter_pronun(tokens[4])
-                    push!(phones, pronun...)
-                    push!(lexicon, (word, pronun))
-                end
-            end
-        end
     end
 
     ###################################################################
