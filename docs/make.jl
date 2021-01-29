@@ -16,6 +16,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/lucasondel/SpeechDatasets.git"
+    repo = "github.com/lucasondel/SpeechDatasets.git",
+    devbranch = "main",
 )
 
