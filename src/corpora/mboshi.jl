@@ -1,12 +1,14 @@
 module MBOSHI
 
+import ..SIL
+import ..UNK
+import ..isspeechunit
+
 using Dates
 using StringEncodings
 
 const URL = "https://github.com/besacier/mboshi-french-parallel-corpus.git"
 const LOCALDIR = "local"
-const SIL = "<sil>"
-const UNK = "<unk>"
 
 function filter_word(w)
     if w == "</s>"
@@ -36,9 +38,7 @@ function filter_phone(p)
     p
 end
 
-isspeechunit(u) = u != SIL && u != UNK
-
-function prepare(datadir; force = false)
+function prepare(datadir)
     mkpath(joinpath(datadir, LOCALDIR))
 
     ###################################################################
@@ -185,6 +185,20 @@ function prepare(datadir; force = false)
         end
 
     end
+
+    ###################################################################
+    # Create the full split
+
+
+    fulldir = mkpath(joinpath(datadir, "full"))
+    for fname in ["ali", "speakers", "trans.wrd", "uttids", "uttids_speakers", "wav.scp"]
+        traindir = mkpath(joinpath(datadir, "train"))
+        devdir = mkpath(joinpath(datadir, "dev"))
+        open(joinpath(fulldir, fname), "w") do f
+            run(pipeline(pipeline(`cat $(traindir)/$(fname) $(devdir)/$(fname)`, `sort`, `uniq`), stdout=f))
+        end
+    end
+
 
     ###################################################################
     # Prepare the dictionary and the lexicon
