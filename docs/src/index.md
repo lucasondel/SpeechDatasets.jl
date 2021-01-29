@@ -5,6 +5,9 @@
 training speech machine learning system. This package particularly
 focuses on low-resource language.
 
+See the project on
+[github](https://github.com/lucasondel/SpeechDatasets)
+
 ## Authors
 
 [Lucas Ondel](https://lucasondel.github.io), Brno University of Technology
