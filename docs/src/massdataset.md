@@ -1,6 +1,6 @@
 # MASS dataset
 
-The corpus is located [here](https://github.com/besacier/mboshi-french-parallel-corpus/blob/master/README.md)
+The data's project is located [here](https://github.com/getalp/mass-dataset)
 
 ## Installing the corpus
 
