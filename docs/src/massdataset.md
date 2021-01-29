@@ -18,9 +18,7 @@ Make sure to download the correct data:
 | Romanian | Romanian      | Dumitru Cornilescu Non Drama New Testament | RONDCVN1DA.zip    |
 | Russian  | Russian       | 1876 Synodal Bible Drama New Testament     | RUSS76N2DA.zip    |
 
-When choosing which version of the data select "New Testament" and "Non-Drama".
-
-Thenk un-zip the archive and run:
+Then, un-zip the archive and run:
 
 ```julia
 using SpeechDatasets
