@@ -12,4 +12,8 @@ include("corpora/massdataset.jl")
 using .MASSDATASET
 export MASSDATASET
 
+include("corpora/yoruba.jl")
+using .YORUBA
+export YORUBA
+
 end # module
