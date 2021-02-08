@@ -184,6 +184,16 @@ function prepare(datadir)
             end
         end
 
+        # trans.wrd
+        open(joinpath(setdir, "trans.wrd.fr"), "w") do f
+            for uttid in uttids
+                speaker = utt2spk[uttid]
+                fname = "$(join([speaker, uttid], "_")).fr.cleaned.noPunct"
+                open(joinpath(wavdir, fname), "r") do f2
+                    println(f, uttid, " ", readline(f2))
+                end
+            end
+        end
     end
 
     ###################################################################
@@ -191,7 +201,8 @@ function prepare(datadir)
 
 
     fulldir = mkpath(joinpath(datadir, "full"))
-    for fname in ["ali", "speakers", "trans.wrd", "uttids", "uttids_speakers", "wav.scp"]
+    for fname in ["ali", "speakers", "trans.wrd", "trans.wrd.fr", "uttids",
+                  "uttids_speakers", "wav.scp"]
         traindir = mkpath(joinpath(datadir, "train"))
         devdir = mkpath(joinpath(datadir, "dev"))
         open(joinpath(fulldir, fname), "w") do f
