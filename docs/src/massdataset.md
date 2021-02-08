@@ -15,6 +15,7 @@ Make sure to download the correct data:
 | English  | English       | Standard Version Non Drama New Testament   | ENGESVN1DA.zip    |
 | Finnish  | Finnish       | 1938 New Testament Non Drama               | FIN38VN1DA.zip    |
 | French   | French        | 1910 Louis Segond New Testament            | FRNTLSN2DA.zip    |
+| Hungarian| Hungariance   | ?                                          | HUNHBSN1DA.zip    |
 | Romanian | Romanian      | Dumitru Cornilescu Non Drama New Testament | RONDCVN1DA.zip    |
 | Russian  | Russian       | 1876 Synodal Bible Drama New Testament     | RUSS76N2DA.zip    |
 
