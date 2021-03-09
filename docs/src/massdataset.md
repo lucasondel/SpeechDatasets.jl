@@ -26,7 +26,7 @@ using SpeechDatasets
 
 MASSDATASET.prepare("data/massdataset", "audiodir", "lang")
 ```
-where `audiodir` is the directory contiaining the MP3 files, "lang" is
+where `audiodir` is the directory containing the MP3 files, "lang" is
 the name of the language of the data without capital (french, basque,
 russian, ...).
 

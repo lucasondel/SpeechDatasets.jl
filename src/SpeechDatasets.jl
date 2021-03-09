@@ -1,5 +1,7 @@
 module SpeechDatasets
 
+using NaturalSort
+
 const SIL = "<sil>"
 const UNK = "<unk>"
 isspeechunit(u) = u != SIL && u != UNK

@@ -6,12 +6,14 @@ import ..isspeechunit
 
 using Dates
 using StringEncodings
+using NaturalSort
 
 const URL_FEMALE_AUDIO = "https://www.openslr.org/resources/86/yo_ng_female.zip"
 const URL_FEMALE_TRANS = "https://www.openslr.org/resources/86/line_index_female.tsv"
 const URL_MALE_AUDIO = "https://www.openslr.org/resources/86/yo_ng_male.zip"
 const URL_MALE_TRANS = "https://www.openslr.org/resources/86/line_index_male.tsv"
 const LOCALDIR = "local"
+const URL_ALI = "https://raw.githubusercontent.com/beer-asr/beer/master/recipes/aud/local/google_lr/ali"
 
 function prepare(datadir)
 
@@ -28,7 +30,6 @@ function prepare(datadir)
         run(`wget -P $rawdata $URL_MALE_AUDIO`)
         run(`wget -P $rawdata $URL_MALE_TRANS`)
 
-
         run(`unzip -d $orig_wavs_f $(joinpath(rawdata, "yo_ng_female.zip"))`)
 
         run(`unzip -d $orig_wavs_m $(joinpath(rawdata, "yo_ng_male.zip"))`)
@@ -41,131 +42,57 @@ function prepare(datadir)
     ###################################################################
     # Fix the timing and down-sample to 16kHz
 
-    wavs_f = mkpath(joinpath(rawdata, "wavs_female"))
-    if ! ispath(wavs_f, ".done")
+    wavdir = mkpath(joinpath(datadir, LOCALDIR, "wavs"))
+
+    if ! ispath(wavdir, ".done_f")
         @info "Downsampling the data (female) to 16kHz"
         for fname in readdir(orig_wavs_f)
             if endswith(fname, "wav")
-                out = joinpath(wavs_f, fname)
+                out = joinpath(wavdir, fname)
                 run(`sox -G $(joinpath(orig_wavs_f, fname)) -t wav $out rate 16k`)
             end
         end
-        open(joinpath(wavs_f, ".done"), "w") do f print(f, now()) end
+        open(joinpath(wavdir, ".done_f"), "w") do f print(f, now()) end
     else
         @info "Data (female) already downsampled to 16kHz."
     end
 
-    wavs_m = mkpath(joinpath(rawdata, "wavs_male"))
-    if ! ispath(wavs_m, ".done")
+    if ! ispath(wavdir, ".done_m")
         @info "Downsampling the data (male) to 16kHz"
         for fname in readdir(orig_wavs_m)
             if endswith(fname, "wav")
-                out = joinpath(wavs_m, fname)
+                out = joinpath(wavdir, fname)
                 run(`sox -G $(joinpath(orig_wavs_m, fname)) -t wav $out rate 16k`)
             end
         end
-        open(joinpath(wavs_m, ".done"), "w") do f print(f, now()) end
+        open(joinpath(wavdir, ".done_m"), "w") do f print(f, now()) end
     else
         @info "Data (male) already downsampled to 16kHz."
     end
 
-
-    return nothing
-
     ###################################################################
-    # Get the list of WAV files
-    allwavdir = joinpath(repopath, "full_corpus_newsplit", "all")
-    allwavs = filter(x -> endswith(x, "wav"), readdir(allwavdir))
+    # Prepare the full set.
 
-    ###################################################################
-    # Some WAV files have incorrect time stamp. In this step we create
-    # a new "fixed" set of WAV files. This step needs `sox` installed.
-    fixedwavdir = mkpath(joinpath(datadir, LOCALDIR, "fixed_wavs"))
-    if ! ispath(joinpath(fixedwavdir, ".done"))
-        @info "Fixing the time stamp of the WAV files"
-        for fname in allwavs
-            inpath = joinpath(allwavdir, fname)
-            outpath = joinpath(fixedwavdir, fname)
-            run(`sox --ignore-length $inpath $outpath`)
-        end
+    allwavs = filter(x -> endswith(x, "wav"), readdir(wavdir))
 
-        open(joinpath(fixedwavdir, ".done"), "w") do f println(f, today()) end
-    else
-        @info "WAV files time stamp already fixed"
-    end
-
-    ###################################################################
-    # Extract the forced alignments of the data + lexicon
-    lexicon = Set()
-    phones = Set()
-    alifile = joinpath(repopath, "forced_alignments_supervised_spkr",
-                       "limsi-align", "trn0.seg")
-    full_ali_file = joinpath(datadir, LOCALDIR, "full_ali")
-    open(full_ali_file, "w") do f_ali
-        open(alifile, enc"latin1", "r") do f
-            uttid = ""
-            phn_stack = []
-            for line in eachline(f)
-                if startswith(line, "#@ sid")
-                    if uttid ≠ "" println(f_ali) end
-                    uttid = split(split(line, "=")[2], ".")[1]
-                    print(f_ali, uttid)
-                elseif startswith(line, "#@ word")
-                    tokens = split(line)
-                    phn_stack = [c for c in tokens[4]]
-                    word = filter_word(split(tokens[2], "=")[2])
-                    pronun = filter_pronun(tokens[4])
-                    push!(phones, pronun...)
-                    push!(lexicon, (word, pronun))
-                elseif ! startswith(line, "#")
-                    label = filter_phone(popfirst!(phn_stack))
-                    tokens = split(line)
-                    s1, s2, s3 = tokens[5:7]
-                    duration = parse(Int, s1) + parse(Int, s2) + parse(Int, s3)
-                    for i in 1:duration
-                        print(f_ali, " ", label)
-                    end
-                end
-            end
-        end
-    end
-
-    full_ali = Dict()
-    open(full_ali_file, "r") do f
-        for line in eachline(f)
-            tokens = split(line)
-            uttid = tokens[1]
-            ali = join(tokens[2:end], " ")
-            full_ali[uttid] = ali
-        end
-    end
-
-    ###################################################################
-    # Prepare each set
-
-    for set in ["dev", "train"]
+    set = "full"
+    setdir = mkpath(joinpath(datadir, set))
+    if ! ispath(joinpath(setdir, ".done"))
         @info "Preparing $set set..."
 
-        setdir = mkpath(joinpath(datadir, set))
-
-        wavdir = joinpath(repopath, "full_corpus_newsplit", set)
-        wavs = filter(x -> endswith(x, "wav"), readdir(wavdir))
-
-        # Extract uttids and speakers labels
         uttids = []
         speakers = Set{String}()
         utt2spk = Dict()
         utt2wav = Dict()
-        for fname in wavs
-            tokens = split(replace(fname, ".wav" => ""), "_")
-            speaker = tokens[1]
-            uttid = join(tokens[2:end], "_")
+        for fname in allwavs
+            uttid = replace(fname, ".wav" => "")
+            tokens = split(uttid, "_")
+            speaker = tokens[2]
             push!(uttids, uttid)
             push!(speakers, speaker)
             utt2spk[uttid] = speaker
             utt2wav[uttid] = abspath(fname)
         end
-
         uttids = sort(uttids)
         speakers = sort([s for s in speakers])
 
@@ -189,66 +116,48 @@ function prepare(datadir)
             for s in speakers println(f, s) end
         end
 
-        # ali
-        open(joinpath(setdir, "ali"), "w") do f
-            for uttid in uttids println(f, uttid, " ", full_ali[uttid]) end
-        end
+        alifile = joinpath(setdir, "ali")
+        newalifile = joinpath(setdir, "ali_new")
+        run(`rm -f $alifile $newalifile`)
+        run(`wget -P $(abspath(setdir)) $URL_ALI`)
+        write(newalifile, read(pipeline(`cat $alifile`, `sed s/sil/\<sil\>/g`)))
+        run(`mv $newalifile $alifile`)
 
         # trans.wrd
-        open(joinpath(setdir, "trans.wrd"), "w") do f
-            for uttid in uttids
-                speaker = utt2spk[uttid]
-                fname = "$(join([speaker, uttid], "_")).mb.cleaned"
-                open(joinpath(wavdir, fname), "r") do f2
-                    println(f, uttid, " ", readline(f2))
-                end
-            end
-        end
+        write(joinpath(rawdata, "line_index.tsv"),
+              read(`cat $rawdata/line_index_male.tsv $rawdata/line_index_female.tsv`))
+        cmd = pipeline(`cat $rawdata/line_index.tsv`, `sed "s/$(Char('\t'))/ /g"`)
+        write(joinpath(setdir, "trans.wrd"), read(cmd))
 
+        open(joinpath(setdir, ".done"), "w") do f print(f, now()) end
+    else
+        @info "$set already prepared"
     end
 
     ###################################################################
-    # Create the full split
+    # Prepare the lang directory.
 
-    fulldir = mkpath(joinpath(datadir, "full"))
-    for fname in ["ali", "speakers", "trans.wrd", "uttids", "uttids_speakers", "wav.scp"]
-        traindir = mkpath(joinpath(datadir, "train"))
-        devdir = mkpath(joinpath(datadir, "dev"))
-        open(joinpath(fulldir, fname), "w") do f
-            run(pipeline(pipeline(`cat $(traindir)/$(fname) $(devdir)/$(fname)`, `sort`, `uniq`), stdout=f))
-        end
-    end
+    @info "Creating the \"lang\" directory..."
 
-
-    ###################################################################
-    # Prepare the dictionary and the lexicon
     langdir = mkpath(joinpath(datadir, "lang"))
 
-    words = Set()
-    for (w, p) in lexicon push!(words, w) end
-    open(joinpath(langdir, "words"), "w") do f
-        for w in sort([w for w in words])
-            println(f, w)
+    phones = Set()
+    open(joinpath(datadir, set, "ali"), "r") do f
+        for line in eachline(f)
+            tokens = split(line)
+            for phone in tokens[2:end]
+                push!(phones, phone)
+            end
         end
     end
 
     open(joinpath(langdir, "phones"), "w") do f
-        for p in sort([p for p in phones])
+        for p in sort(collect(phones), lt = natural)
             type = isspeechunit(p) ? "speech-unit" : "non-speech-unit"
             println(f, p, " ", type)
         end
     end
 
-    lex_entries = []
-    for (w,p) in lexicon
-        push!(lex_entries, "$w $(join(p, " "))")
-    end
-
-    open(joinpath(langdir, "lexicon"), "w") do f
-        for p in sort([p for p in lex_entries])
-            println(f, p)
-        end
-    end
 end
 
 end # module
