@@ -1,4 +1,4 @@
-# SpeechDatasets
+# SpeechDatasets.jl
 
 *Julia package to prepare speech corpora for training speech machine learning system.*
 
