@@ -142,7 +142,7 @@ function prepare(datadir)
             push!(uttids, uttid)
             push!(speakers, speaker)
             utt2spk[uttid] = speaker
-            utt2wav[uttid] = abspath(fname)
+            utt2wav[uttid] = abspath(joinpath(fixedwavdir, fname))
         end
 
         uttids = sort(uttids)
