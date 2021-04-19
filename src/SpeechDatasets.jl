@@ -10,6 +10,8 @@ include("corpora/mboshi.jl")
 using .MBOSHI
 export MBOSHI
 
+include("corpora/timit.jl")
+
 include("corpora/massdataset.jl")
 using .MASSDATASET
 export MASSDATASET
