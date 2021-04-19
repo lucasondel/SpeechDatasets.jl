@@ -221,6 +221,7 @@ function prepare(rootdir, datadir)
             end
         end
     end
+end
 
 end
 
