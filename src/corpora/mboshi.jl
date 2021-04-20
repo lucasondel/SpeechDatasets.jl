@@ -4,6 +4,8 @@ import ..LOCATIONS
 import ..LABELS
 import ..NON_SPEECH_UNITS
 
+using StringEncodings
+
 const URL = "https://github.com/besacier/mboshi-french-parallel-corpus.git"
 
 function filter_word(w)
@@ -220,7 +222,7 @@ function prepare(datadir)
     isspeechunit(u) = u ∉ NON_SPEECH_UNITS
     open(joinpath(langdir, LOCATIONS[:units]), "w") do f
         for p in sort([p for p in phones])
-            type = isspeechunit(p) ? "speech-unit" : "non-speech-unit"
+            type = isspeechunit(p) ? LABELS[:speechunit] : LABELS[:nonspeeechunit]
             println(f, p, "\t", type)
         end
     end

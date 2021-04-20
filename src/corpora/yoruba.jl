@@ -1,18 +1,16 @@
 module YORUBA
 
-import ..SIL
-import ..UNK
-import ..isspeechunit
+import ..LOCATIONS
+import ..LABELS
+import ..NON_SPEECH_UNITS
 
 using Dates
-using StringEncodings
 using NaturalSort
 
 const URL_FEMALE_AUDIO = "https://www.openslr.org/resources/86/yo_ng_female.zip"
 const URL_FEMALE_TRANS = "https://www.openslr.org/resources/86/line_index_female.tsv"
 const URL_MALE_AUDIO = "https://www.openslr.org/resources/86/yo_ng_male.zip"
 const URL_MALE_TRANS = "https://www.openslr.org/resources/86/line_index_male.tsv"
-const LOCALDIR = "local"
 const URL_ALI = "https://raw.githubusercontent.com/beer-asr/beer/master/recipes/aud/local/google_lr/ali"
 
 function prepare(datadir)
@@ -20,7 +18,7 @@ function prepare(datadir)
     ###################################################################
     # Download the data
 
-    rawdata = mkpath(joinpath(datadir, LOCALDIR, "data"))
+    rawdata = mkpath(joinpath(datadir, LOCATIONS[:local], "data"))
     orig_wavs_f = mkpath(joinpath(rawdata, "orig_wavs_female"))
     orig_wavs_m = mkpath(joinpath(rawdata, "orig_wavs_male"))
     if ! ispath(joinpath(rawdata, ".done"))
@@ -42,7 +40,7 @@ function prepare(datadir)
     ###################################################################
     # Fix the timing and down-sample to 16kHz
 
-    wavdir = mkpath(joinpath(datadir, LOCALDIR, "wavs"))
+    wavdir = mkpath(joinpath(datadir, LOCATIONS[:local], "wavs"))
 
     if ! ispath(wavdir, ".done_f")
         @info "Downsampling the data (female) to 16kHz"
@@ -97,26 +95,26 @@ function prepare(datadir)
         speakers = sort([s for s in speakers])
 
         # uttids
-        open(joinpath(setdir, "uttids"), "w") do f
+        open(joinpath(setdir, LOCATIONS[:uttids]), "w") do f
             for uttid in uttids println(f, uttid) end
         end
 
         # wav.scp
-        open(joinpath(setdir, "wav.scp"), "w") do f
-            for uttid in uttids println(f, uttid, " ", utt2wav[uttid]) end
+        open(joinpath(setdir, LOCATIONS[:wavs]), "w") do f
+            for uttid in uttids println(f, uttid, "\t", utt2wav[uttid]) end
         end
 
         # uttids_speakers
-        open(joinpath(setdir, "uttids_speakers"), "w") do f
-            for uttid in uttids println(f, uttid, " ", utt2spk[uttid]) end
+        open(joinpath(setdir, LOCATIONS[:utt2spk]), "w") do f
+            for uttid in uttids println(f, uttid, "\t", utt2spk[uttid]) end
         end
 
         # speakers
-        open(joinpath(setdir, "speakers"), "w") do f
+        open(joinpath(setdir, LOCATIONS[:speakers]), "w") do f
             for s in speakers println(f, s) end
         end
 
-        alifile = joinpath(setdir, "ali")
+        alifile = joinpath(setdir, LOCATIONS[:ali])
         newalifile = joinpath(setdir, "ali_new")
         run(`rm -f $alifile $newalifile`)
         run(`wget -P $(abspath(setdir)) $URL_ALI`)
@@ -137,12 +135,11 @@ function prepare(datadir)
     ###################################################################
     # Prepare the lang directory.
 
-    @info "Creating the \"lang\" directory..."
-
-    langdir = mkpath(joinpath(datadir, "lang"))
+    langdir = mkpath(joinpath(datadir, LOCATIONS[:lang]))
+    @info "preparing $langdir..."
 
     phones = Set()
-    open(joinpath(datadir, set, "ali"), "r") do f
+    open(joinpath(datadir, set, LOCATIONS[:ali]), "r") do f
         for line in eachline(f)
             tokens = split(line)
             for phone in tokens[2:end]
@@ -151,10 +148,10 @@ function prepare(datadir)
         end
     end
 
-    open(joinpath(langdir, "phones"), "w") do f
+    open(joinpath(langdir, LOCATIONS[:units]), "w") do f
         for p in sort(collect(phones), lt = natural)
-            type = isspeechunit(p) ? "speech-unit" : "non-speech-unit"
-            println(f, p, " ", type)
+            type = p ∈ NON_SPEECH_UNITS ? LABELS[:nonspeechunit] : LABELS[:speechunit]
+            println(f, p, "\t", type)
         end
     end
 
