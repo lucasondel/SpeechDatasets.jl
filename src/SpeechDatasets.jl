@@ -2,8 +2,8 @@ module SpeechDatasets
 
 using NaturalSort
 
-const SIL = "<sil>"
-const UNK = "<unk>"
+include("consts.jl")
+
 isspeechunit(u) = u != SIL && u != UNK
 
 include("corpora/alffa.jl")
