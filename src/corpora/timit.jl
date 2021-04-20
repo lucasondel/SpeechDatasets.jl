@@ -224,6 +224,3 @@ function prepare(rootdir, datadir)
 end
 
 end
-
-using .TIMIT
-export TIMIT
