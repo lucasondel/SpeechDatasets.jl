@@ -1,12 +1,12 @@
 # SpeechDatasets
 
-[SpeechDaatasets](https://github.com/lucasondel/SpeechDatasets) is a
+[SpeechDaatasets](https://github.com/lucasondel/SpeechDatasets.jl) is a
 [Julia](https://julialang.org/) package to prepare speech corpora for
 training speech machine learning system. This package particularly
 focuses on low-resource language.
 
 See the project on
-[github](https://github.com/lucasondel/SpeechDatasets)
+[github](https://github.com/lucasondel/SpeechDatasets.jl)
 
 ## Authors
 
@@ -22,13 +22,13 @@ pkg> add SpeechDatasets
 
 or to install the latest version from the github repository:
 ```julia
-pkg> add https://github.com/lucasondel/SpeechDatasets
+pkg> add https://github.com/lucasondel/SpeechDatasets.jl
 ```
 
 ## Manual outline
 
 ```@contents
 depth = 1
-Pages = ["mboshi.md", "massdataset.md"]
+Pages = ["alffa.md", "mboshi.md", "massdataset.md", "timit.md"]
 ```
 

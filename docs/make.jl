@@ -10,13 +10,15 @@ makedocs(
         "Home" => "index.md",
         "Corpora" => Any[
             "Mboshi" => "mboshi.md",
-            "Mass dataset" => "massdataset.md"
+            "Mass dataset" => "massdataset.md",
+            "TIMIT" => "timit.md",
+            "ALFFA" => "alffa.md",
         ]
     ]
 )
 
 deploydocs(
-    repo = "github.com/lucasondel/SpeechDatasets.git",
+    repo = "github.com/lucasondel/SpeechDatasets.jl.git",
     devbranch = "main",
 )
 

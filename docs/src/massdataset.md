@@ -9,26 +9,25 @@ The data should be downloaded
 
 Make sure to download the correct data:
 
-| Language | Language Name | Version                                    | Archive Name      |
-|:---------|:--------------|:-------------------------------------------|:------------------|
-| Basque   | Euskara       | Non Drama New Testament                    | EUSEABN1DA.zip    |
-| English  | English       | Standard Version Non Drama New Testament   | ENGESVN1DA.zip    |
-| Finnish  | Finnish       | 1938 New Testament Non Drama               | FIN38VN1DA.zip    |
-| French   | French        | 1910 Louis Segond New Testament            | FRNTLSN2DA.zip    |
-| Hungarian| Hungariance   | ?                                          | HUNHBSN1DA.zip    |
-| Romanian | Romanian      | Dumitru Cornilescu Non Drama New Testament | RONDCVN1DA.zip    |
-| Russian  | Russian       | 1876 Synodal Bible Drama New Testament     | RUSS76N2DA.zip    |
+| Language | Archive Name      |
+|:---------|:------------------|
+| basque   | EUSEABN1DA.zip    |
+| english  | ENGESVN1DA.zip    |
+| finnish  | FIN38VN1DA.zip    |
+| french   | FRNTLSN2DA.zip    |
+| hungarian| HUNHBSN1DA.zip    |
+| romanian | RONDCVN1DA.zip    |
+| russian  | RUSS76N2DA.zip    |
 
 Then, un-zip the archive and run:
 
 ```julia
 using SpeechDatasets
 
-MASSDATASET.prepare("data/massdataset", "audiodir", "lang")
+MASSDATASET.prepare("data/mass", "audioddi", lang)
 ```
-where `audiodir` is the directory containing the MP3 files, "lang" is
-the name of the language of the data without capital (french, basque,
-russian, ...).
+where `audiodir` is the directory containing the MP3 files, lang is
+the name of the language (`:french`, `:basque`, `:russian`, ...).
 
 ## Citation
 ```
