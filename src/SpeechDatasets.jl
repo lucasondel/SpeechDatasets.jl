@@ -1,10 +1,10 @@
 module SpeechDatasets
 
-using NaturalSort
+#######################################################################
+# Corpora
 
+# Standard names/labels for the data preparation
 include("consts.jl")
-
-isspeechunit(u) = u != SIL && u != UNK
 
 include("corpora/alffa.jl")
 include("corpora/massdataset.jl")
