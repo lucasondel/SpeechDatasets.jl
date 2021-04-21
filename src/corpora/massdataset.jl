@@ -1,24 +1,22 @@
 module MASSDATASET
 
-import ..SIL
-import ..UNK
-import ..isspeechunit
+import ..LABELS
+import ..LOCATIONS
+import ..NON_SPEECH_UNITS
 
 using Dates
-using StringEncodings
 
 const URL = "https://github.com/getalp/mass-dataset"
-const LOCALDIR = "local"
 
 const LANG = Dict(
-    "basque" => "eu",
-    "finnish" => "fi",
-    "english" => "en",
-    "spanish" => "es",
-    "french" => "fr",
-    "hungarian" => "hu",
-    "romanian" => "ro",
-    "russian" => "ru"
+    :basque => "eu",
+    :finnish => "fi",
+    :english => "en",
+    :spanish => "es",
+    :french => "fr",
+    :hungarian => "hu",
+    :romanian => "ro",
+    :russian => "ru"
 )
 
 uttid(fname) = splitext(basename(fname))[1]
@@ -72,16 +70,13 @@ function getlabels(textgrid, class)
 end
 
 function prepare(datadir, audiodir, lang)
-    if lang ∉ keys(LANG)
-        @error "$lang is not available"
-        return
-    end
+    lang ∈ keys(LANG) || error("$lang is not available")
 
-    mkpath(joinpath(datadir, LOCALDIR))
+    mkpath(joinpath(datadir, LOCATIONS[:local]))
 
     ###################################################################
     # Download the github directory
-    repopath = joinpath(datadir, LOCALDIR, "mass-dataset-github")
+    repopath = joinpath(datadir, LOCATIONS[:local], "mass-dataset-github")
     if ! ispath(repopath)
         @info "Downloading the data, this may take a while..."
         run(`git clone $URL $repopath`)
@@ -91,7 +86,7 @@ function prepare(datadir, audiodir, lang)
 
     ###################################################################
     # Convert MP3 files to 16kHz WAV files
-    wavdir = mkpath(joinpath(datadir, LOCALDIR, lang, "wavs"))
+    wavdir = mkpath(joinpath(datadir, LOCATIONS[:local], "$lang", "wavs"))
     if ! ispath(joinpath(wavdir, ".done"))
         @info "creating 16kHz WAV files."
         for fname_ext in readdir(audiodir)
@@ -110,12 +105,12 @@ function prepare(datadir, audiodir, lang)
 
     ###################################################################
     # split the data in verse
-    versedir = mkpath(joinpath(datadir, LOCALDIR, lang, "verses"))
+versedir = mkpath(joinpath(datadir, LOCATIONS[:local], "$lang", "verses"))
     if ! ispath(joinpath(versedir, ".done"))
         @info "Splitting chapters into verses."
         script = joinpath(repopath, "scripts", "alignment", "coupe_verset.py")
-        raw_text = joinpath(repopath, "dataset", lang, "raw_txt")
-        textgrid = joinpath(repopath, "dataset", lang, "maus_textgrid")
+        raw_text = joinpath(repopath, "dataset", "$lang", "raw_txt")
+        textgrid = joinpath(repopath, "dataset", "$lang", "maus_textgrid")
         code = LANG[lang]
         run(`python3 $script --lab $raw_text --textgrid $textgrid --wav $wavdir --language $(LANG[lang]) --output $versedir --force`)
 
@@ -129,11 +124,11 @@ function prepare(datadir, audiodir, lang)
     ###################################################################
     # Generating time alignments file
 
-    outdir = mkpath(joinpath(datadir, lang, "full"))
-    langdir = mkpath(joinpath(datadir, lang, "lang"))
+    outdir = mkpath(joinpath(datadir, "$lang", "full"))
+    langdir = mkpath(joinpath(datadir, "$lang", "lang"))
 
     @info "Generating time alignments file."
-    open(joinpath(outdir, "ali"), "w") do f
+    open(joinpath(outdir, LOCATIONS[:ali]), "w") do f
         for fname in readdir(versedir)
             if endswith(fname, ".TextGrid")
                 printali(f, joinpath(versedir, fname))
@@ -147,12 +142,12 @@ function prepare(datadir, audiodir, lang)
 
     @info "Generating word transcription."
 
-    open(joinpath(outdir, "trans.wrd"), "w") do f
+    open(joinpath(outdir, LOCATIONS[:trans]*".wrd"), "w") do f
         for fname in readdir(versedir)
             if endswith(fname, ".TextGrid")
                 id = uttid(fname)
                 u_words = getlabels(joinpath(abspath(versedir), fname), "\"ORT\"")
-                println(f, id, " ", join(u_words, " "))
+                println(f, id, "\t", join(u_words, " "))
             end
         end
     end
@@ -161,12 +156,12 @@ function prepare(datadir, audiodir, lang)
     # Generating wav.scp
 
     @info "Generating wav.scp file."
-    open(joinpath(outdir, "wav.scp"), "w") do f
+    open(joinpath(outdir, LOCATIONS[:wavs]), "w") do f
         for fname in readdir(versedir)
             if endswith(fname, ".TextGrid")
                 id = uttid(fname)
                 wav = joinpath(abspath(versedir), "$(id)_one_channel.wav")
-                println(f, id, " ", wav)
+                println(f, id, "\t", wav)
             end
         end
     end
@@ -175,7 +170,7 @@ function prepare(datadir, audiodir, lang)
     # Generating uttids/speakers
 
     @info "Generating uttids file."
-    open(joinpath(outdir, "uttids"), "w") do f
+    open(joinpath(outdir, LOCATIONS[:uttids]), "w") do f
         for fname in readdir(versedir)
             if endswith(fname, ".TextGrid")
                 id = uttid(fname)
@@ -185,7 +180,7 @@ function prepare(datadir, audiodir, lang)
     end
 
     @info "Generating speakers file."
-    open(joinpath(outdir, "speakers"), "w") do f
+    open(joinpath(outdir, LOCATIONS[:speakers]), "w") do f
         for fname in readdir(versedir)
             if endswith(fname, ".TextGrid")
                 id = uttid(fname)
@@ -200,11 +195,11 @@ function prepare(datadir, audiodir, lang)
     # to have a unique speaker.
 
     @info "Generating uttids_speakers file."
-    open(joinpath(outdir, "uttids_speakers"), "w") do f
+    open(joinpath(outdir, LOCATIONS[:utt2spk]), "w") do f
         for fname in readdir(versedir)
             if endswith(fname, ".TextGrid")
                 id = uttid(fname)
-                println(f, id, " ", id)
+                println(f, id, "\t", id)
             end
         end
     end
@@ -228,15 +223,15 @@ function prepare(datadir, audiodir, lang)
         end
     end
 
-    words[SIL] = [[SIL]]
-    words[UNK] = [[UNK]]
+    words[LABELS[:sil]] = [[LABELS[:sil]]]
+    words[LABELS[:unk]] = [[LABELS[:unk]]]
 
-    phones = Set([SIL, UNK])
-    open(joinpath(langdir, "lexicon"), "w") do f
+    phones = Set([LABELS[:sil], LABELS[:unk]])
+    open(joinpath(langdir, LOCATIONS[:lexicon]), "w") do f
         for word in sort(collect(keys(words)))
             for pronun in words[word]
                 push!(phones, pronun...)
-                println(f, word, " ", join(pronun, " "))
+                println(f, word, "\t", join(pronun, " "))
             end
         end
     end
@@ -245,7 +240,7 @@ function prepare(datadir, audiodir, lang)
     # Generate the dictionary
     @info "Generating the dictionary."
 
-    open(joinpath(langdir, "words"), "w") do f
+    open(joinpath(langdir, LOCATIONS[:words]), "w") do f
         for word in sort(collect(keys(words)))
             println(f, word)
         end
@@ -255,9 +250,9 @@ function prepare(datadir, audiodir, lang)
     # Generate the phone set
     @info "Generating the phone set."
 
-    open(joinpath(langdir, "phones"), "w") do f
+    open(joinpath(langdir, LOCATIONS[:units]), "w") do f
         for p in sort(collect(phones))
-            println(f, p, " ", isspeechunit(p) ? "speech-unit" : "non-speech-unit")
+            println(f, p, "\t", p ∉ NON_SPEECH_UNITS ? LABELS[:speechunit] : LABELS[:nonspeechunit])
         end
     end
 

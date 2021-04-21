@@ -1,38 +1,23 @@
 module TIMIT
 
-import ..SIL
-import ..UNK
+import ..LABELS
+import ..LOCATIONS
 
-using Dates
 using Glob
-using StringEncodings
-
-const LOCALDIR = "local"
 
 const URL_PHONE_MAP = "https://raw.githubusercontent.com/kaldi-asr/kaldi/master/egs/timit/s5/conf/phones.60-48-39.map"
 const URL_DEV_SPKS = "https://raw.githubusercontent.com/kaldi-asr/kaldi/master/egs/timit/s5/conf/dev_spk.list"
 const URL_TEST_SPKS = "https://raw.githubusercontent.com/kaldi-asr/kaldi/master/egs/timit/s5/conf/test_spk.list"
 
-isspeechunit(u) = u ≠ SIL && u ≠ UNK && u ≠ "h#" && u ≠ "epi" && u ≠ "pau"
+isspeechunit(u) = u ≠ LABELS[:sil] && u ≠ "h#" && u ≠ "epi" && u ≠ "pau"
 
 function filter_phone(p)
-    if p == "sil" return SIL end
+    if p == "sil" return LABELS[:sil] end
     p
 end
 
-
-function filter_pronun(p)
-    if p == "."
-        return [SIL]
-    elseif p == "!!"
-        return [UNK]
-    else
-        return ["$c" for c in p]
-    end
-end
-
 function prepare(rootdir, datadir)
-    localdir = mkpath(joinpath(datadir, LOCALDIR))
+    localdir = mkpath(joinpath(datadir, LOCATIONS[:local]))
 
     # phone mapping
     if ! ispath(joinpath(localdir, "phones.60-48-39.map"))
@@ -100,39 +85,39 @@ function prepare(rootdir, datadir)
         end
 
         # wav.scp
-        scp = joinpath(datasetdir, "wav.scp")
+        scp = joinpath(datasetdir, LOCATIONS[:wavs])
         open(scp, "w") do f
             for (uttid, path) in uttids
                 uttname = split(uttid, "_")[2]
-                println(f, "$uttid sph2pipe -f wav $(joinpath(path, "$(uttname).wav")) |")
+                println(f, "$uttid\tsph2pipe -f wav $(joinpath(path, "$(uttname).wav")) |")
             end
         end
 
         # uttids
-        uttidsfile = joinpath(datasetdir, "uttids")
+        uttidsfile = joinpath(datasetdir, LOCATIONS[:uttids])
         open(uttidsfile, "w") do f
             for uttid in keys(uttids) println(f, uttid) end
         end
 
         # uttids_speakers
-        uttids_spk = joinpath(datasetdir, "uttids_speakers")
+        uttids_spk = joinpath(datasetdir, LOCATIONS[:utt2spk])
         open(uttids_spk, "w") do f
             for uttid in keys(uttids)
                 spk = split(uttid, "_")[1]
-                println(f, "$uttid $spk")
+                println(f, "$uttid\t$spk")
             end
         end
 
         # speakers
-        spkfile = joinpath(datasetdir, "speakers")
+        spkfile = joinpath(datasetdir, LOCATIONS[:speakers])
         open(spkfile, "w") do f
             for spk in sort(collect(spks)) println(f, spk) end
         end
 
         # trans.phn.60
-        open(joinpath(datasetdir, "trans.phn.60"), "w") do f
+        open(joinpath(datasetdir, LOCATIONS[:trans]*".phn.60"), "w") do f
             for (uttid, path) in uttids
-                print(f, uttid, " ")
+                print(f, uttid, "\t")
                 uttname = split(uttid, "_")[2]
                 open(joinpath(path, "$(uttname).phn"), "r") do f2
                     for line in eachline(f2)
@@ -144,9 +129,9 @@ function prepare(rootdir, datadir)
         end
 
         # trans.phn.48
-        open(joinpath(datasetdir, "trans.phn.48"), "w") do f
+        open(joinpath(datasetdir, LOCATIONS[:trans]*".phn.48"), "w") do f
             for (uttid, path) in uttids
-                print(f, uttid, " ")
+                print(f, uttid, "\t")
                 uttname = split(uttid, "_")[2]
                 open(joinpath(path, "$(uttname).phn"), "r") do f2
                     for line in eachline(f2)
@@ -161,9 +146,9 @@ function prepare(rootdir, datadir)
         end
 
         # trans.phn.39
-        open(joinpath(datasetdir, "trans.phn.39"), "w") do f
+        open(joinpath(datasetdir, LOCATIONS[:trans]*".phn.39"), "w") do f
             for (uttid, path) in uttids
-                print(f, uttid, " ")
+                print(f, uttid, " \t")
                 uttname = split(uttid, "_")[2]
                 open(joinpath(path, "$(uttname).phn"), "r") do f2
                     for line in eachline(f2)
@@ -178,9 +163,9 @@ function prepare(rootdir, datadir)
         end
 
         # ali.phn
-        open(joinpath(datasetdir, "ali.phn.60"), "w") do f
+        open(joinpath(datasetdir, LOCATIONS[:ali]*".phn.60"), "w") do f
             for (uttid, path) in uttids
-                print(f, uttid, " ")
+                print(f, uttid, "\t")
                 uttname = split(uttid, "_")[2]
                 open(joinpath(path, "$(uttname).phn"), "r") do f2
                     for line in eachline(f2)
@@ -203,21 +188,21 @@ function prepare(rootdir, datadir)
         langdir = mkpath(joinpath(datadir, "lang$ext"))
         @info "preparing $langdir"
 
-        open(joinpath(langdir, "phones"), "w") do f
+        open(joinpath(langdir, LOCATIONS[:units]), "w") do f
             for phone in phones
-                println(f, phone, " ", isspeechunit(phone) ? "speech-unit" : "non-speech-unit")
+                println(f, phone, "\t", isspeechunit(phone) ? LABELS[:speechunit] : LABELS[:nonspeechunit])
             end
         end
 
-        open(joinpath(langdir, "words"), "w") do f
+        open(joinpath(langdir, LOCATIONS[:words]), "w") do f
             for phone in phones
                 println(f, phone)
             end
         end
 
-        open(joinpath(langdir, "lexicon"), "w") do f
+        open(joinpath(langdir, LOCATIONS[:lexicon]), "w") do f
             for phone in phones
-                println(f, phone, " ", phone)
+                println(f, phone, "\t", phone)
             end
         end
     end
