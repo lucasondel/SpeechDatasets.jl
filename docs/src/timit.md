@@ -13,7 +13,8 @@ TIMIT.prepare("data/timit", "timit/root/dir")
 ```
 
 !!! warning
-    the preparation function assumes that the directory are lower-case!
+    the preparation function assumes that the folder names are
+    lower-case!
 
 ## Citation
 
