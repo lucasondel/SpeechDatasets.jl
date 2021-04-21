@@ -4,7 +4,7 @@
 
 | **Documentation**  |
 |:------------------:|
-|[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://lucasondel.github.io/SpeechDatasets/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://lucasondel.github.io/SpeechDatasets/dev)|
+|[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://lucasondel.github.io/SpeechDatasets.jl/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://lucasondel.github.io/SpeechDatasets.jl/dev)|
 
 ## Installation
 
@@ -21,10 +21,10 @@ pkg> add https://github.com/lucasondel/SpeechDatasets
 ```
 to use the development version.
 
-Have a look at the [documentation](https://lucasondel.github.io/SpeechDatasets/stable)
+Have a look at the [documentation](https://lucasondel.github.io/SpeechDatasets.jl/stable)
 to get started.
 
 ## Authors
 
-Lucas Ondel, Brno University of Technology, 2020
+Lucas Ondel, 2021
 
