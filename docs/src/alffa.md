@@ -1,7 +1,8 @@
 # ALFFA corpus
 
-The original corpus is located [here](https://github.com/besacier/mboshi-french-parallel-corpus/blob/master/README.md).  Note that you don't need to download it, the
-preparation script will do it for you.
+The original corpus is located [here](https://github.com/getalp/ALFFA_PUBLIC).
+Note that you don't need to download it, the preparation script will do
+it for you.
 
 ## Installing the corpus
 
