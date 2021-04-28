@@ -3,9 +3,6 @@ module SpeechDatasets
 # Standard names/labels for the data preparation
 include("consts.jl")
 
-# Mapping xsampa -> ipa
-include("xsampa_ipa.jl")
-
 include("corpora/alffa.jl")
 include("corpora/babel.jl")
 include("corpora/massdataset.jl")
