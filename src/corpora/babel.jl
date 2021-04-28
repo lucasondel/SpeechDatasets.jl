@@ -84,8 +84,8 @@ function prepare(datadir, rootdir, subdirs = ["training", "dev"])
             end
         end
 
-        # trans.char
-        open(joinpath(dir, LOCATIONS[:trans]*".char"), "w") do f
+        # trans.wrd
+        open(joinpath(dir, LOCATIONS[:trans]*".wrd"), "w") do f
             for segment in segments
                 uttid, _, _, text = segment
                 ns_tokens = filter(t -> startswith(t, "<"), split(text))
