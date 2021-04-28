@@ -1,4 +1,4 @@
-# MASS dataset
+# MaSS corpus
 
 The data's project is located [here](https://github.com/getalp/mass-dataset)
 

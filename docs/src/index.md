@@ -29,6 +29,6 @@ pkg> add https://github.com/lucasondel/SpeechDatasets.jl
 
 ```@contents
 depth = 1
-Pages = ["alffa.md", "mboshi.md", "massdataset.md", "timit.md"]
+Pages = ["alffa.md", "babel.md", "mboshi.md", "massdataset.md", "timit.md"]
 ```
 

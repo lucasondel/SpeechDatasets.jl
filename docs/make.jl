@@ -9,10 +9,11 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Corpora" => Any[
-            "Mboshi" => "mboshi.md",
-            "Mass dataset" => "massdataset.md",
-            "TIMIT" => "timit.md",
             "ALFFA" => "alffa.md",
+            "Babel" => "babel.md",
+            "MaSS" => "massdataset.md",
+            "Mboshi" => "mboshi.md",
+            "TIMIT" => "timit.md",
         ]
     ]
 )

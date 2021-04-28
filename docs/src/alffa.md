@@ -27,7 +27,7 @@ For amharic
 }
 ```
 
-For Swahiliy
+For Swahili
 ```
 @InProceedings {gelas:hal-00954048,
 	author = {Gelas, Hadrien and Besacier, Laurent and Pellegrino, Francois},
