@@ -17,7 +17,7 @@ pkg> add SpeechDatasets
 or
 
 ```julia
-pkg> add https://github.com/lucasondel/SpeechDatasets
+pkg> add https://github.com/lucasondel/SpeechDatasets.jl
 ```
 to use the development version.
 
