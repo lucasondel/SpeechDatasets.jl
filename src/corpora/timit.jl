@@ -16,7 +16,7 @@ function filter_phone(p)
     p
 end
 
-function prepare(rootdir, datadir)
+function prepare(datadir, rootdir)
     localdir = mkpath(joinpath(datadir, LOCATIONS[:local]))
 
     # phone mapping
