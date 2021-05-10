@@ -38,7 +38,7 @@ function prepare(datadir, rootdir, subdirs = ["training", "dev"])
 
     nonspeechunits = Set()
     for dirname in subdirs
-        dir = mkpath(joinpath(datadir, dirname))
+        dir = mkpath(joinpath(datadir, dirname == "training" ? "train" : dirname))
         @info "preparing $dir"
 
         segments = []
@@ -54,7 +54,8 @@ function prepare(datadir, rootdir, subdirs = ["training", "dev"])
             for segment in segments
                 uttid, start_t, end_t, _ = segment
                 push!(uttids, uttid)
-                println(f, "$uttid\tsph2pipe -t $(start_t):$(end_t) -f wav $(joinpath(audiodir, "$(uttid).sph")) |")
+                trunc_uttid = split(uttid, "__")[1]
+                println(f, "$uttid\tsph2pipe -t $(start_t):$(end_t) -f wav $(joinpath(audiodir, "$(trunc_uttid).sph")) |")
             end
         end
 
@@ -134,154 +135,6 @@ function prepare(datadir, rootdir, subdirs = ["training", "dev"])
     end
 
     return nothing
-
-    for dataset in ["train", "test", "dev"]
-        datasetdir = mkpath(joinpath(datadir, dataset))
-        @info "preparing $dataset"
-
-        # Load the speakers
-        spks = Set()
-        open(joinpath(localdir, "$(dataset)_spk.list"), "r") do f
-            for line in eachline(f)
-                push!(spks, line)
-            end
-        end
-
-        # Extract the utterance ids
-        uttids = Dict()
-        for path in glob("*/dr*/*", rootdir)
-            spk = basename(path)
-            spk in spks || continue
-
-            for wavpath in glob("*wav", path)
-                utt = splitext(basename(wavpath))[1]
-                ! startswith(utt, "sa") || continue
-                uttids["$(spk)_$(utt)"] = path
-            end
-        end
-
-        # wav.scp
-        scp = joinpath(datasetdir, LOCATIONS[:wavs])
-        open(scp, "w") do f
-            for (uttid, path) in uttids
-                uttname = split(uttid, "_")[2]
-                println(f, "$uttid\tsph2pipe -f wav $(joinpath(path, "$(uttname).wav")) |")
-            end
-        end
-
-        # uttids
-        uttidsfile = joinpath(datasetdir, LOCATIONS[:uttids])
-        open(uttidsfile, "w") do f
-            for uttid in keys(uttids) println(f, uttid) end
-        end
-
-        # uttids_speakers
-        uttids_spk = joinpath(datasetdir, LOCATIONS[:utt2spk])
-        open(uttids_spk, "w") do f
-            for uttid in keys(uttids)
-                spk = split(uttid, "_")[1]
-                println(f, "$uttid\t$spk")
-            end
-        end
-
-        # speakers
-        spkfile = joinpath(datasetdir, LOCATIONS[:speakers])
-        open(spkfile, "w") do f
-            for spk in sort(collect(spks)) println(f, spk) end
-        end
-
-        # trans.phn.60
-        open(joinpath(datasetdir, LOCATIONS[:trans]*".phn.60"), "w") do f
-            for (uttid, path) in uttids
-                print(f, uttid, "\t")
-                uttname = split(uttid, "_")[2]
-                open(joinpath(path, "$(uttname).phn"), "r") do f2
-                    for line in eachline(f2)
-                        print(f, split(line)[3], " ")
-                    end
-                end
-                println(f)
-            end
-        end
-
-        # trans.phn.48
-        open(joinpath(datasetdir, LOCATIONS[:trans]*".phn.48"), "w") do f
-            for (uttid, path) in uttids
-                print(f, uttid, "\t")
-                uttname = split(uttid, "_")[2]
-                open(joinpath(path, "$(uttname).phn"), "r") do f2
-                    for line in eachline(f2)
-                        token = split(line)[3]
-                        if token != "q"
-                            print(f, map_60_48[token], " ")
-                        end
-                    end
-                end
-                println(f)
-            end
-        end
-
-        # trans.phn.39
-        open(joinpath(datasetdir, LOCATIONS[:trans]*".phn.39"), "w") do f
-            for (uttid, path) in uttids
-                print(f, uttid, " \t")
-                uttname = split(uttid, "_")[2]
-                open(joinpath(path, "$(uttname).phn"), "r") do f2
-                    for line in eachline(f2)
-                        token = split(line)[3]
-                        if token != "q"
-                            print(f, map_60_39[token], " ")
-                        end
-                    end
-                end
-                println(f)
-            end
-        end
-
-        # ali.phn
-        open(joinpath(datasetdir, LOCATIONS[:ali]*".phn.60"), "w") do f
-            for (uttid, path) in uttids
-                print(f, uttid, "\t")
-                uttname = split(uttid, "_")[2]
-                open(joinpath(path, "$(uttname).phn"), "r") do f2
-                    for line in eachline(f2)
-                        s, e, token = split(line)
-                        s = Int(floor(parse(Int, s)/160))
-                        e = Int(floor(parse(Int, e)/160))
-                        print(f, strip("$token "^(e-s)), " ")
-                    end
-                end
-                println(f)
-            end
-        end
-    end
-
-    # lang dir
-    fn = sort ∘ collect
-    for (ext, phones) in [(".60", fn(keys(map_60_48))),
-                          (".48", fn(Set([map_60_48[k] for k in filter(u -> u ≠ "q", keys(map_60_48))]))),
-                          (".39", fn(Set([map_60_39[k] for k in filter(u -> u ≠ "q", keys(map_60_39))])))]
-        langdir = mkpath(joinpath(datadir, "lang$ext"))
-        @info "preparing $langdir"
-
-        open(joinpath(langdir, LOCATIONS[:units]), "w") do f
-            for phone in phones
-                println(f, phone, "\t", isspeechunit(phone) ? LABELS[:speechunit] : LABELS[:nonspeechunit])
-            end
-        end
-
-        open(joinpath(langdir, LOCATIONS[:words]), "w") do f
-            for phone in phones
-                println(f, phone)
-            end
-        end
-
-        open(joinpath(langdir, LOCATIONS[:lexicon]), "w") do f
-            for phone in phones
-                println(f, phone, "\t", phone)
-            end
-        end
-    end
 end
 
 end
