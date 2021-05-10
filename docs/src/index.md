@@ -1,6 +1,6 @@
 # SpeechDatasets
 
-[SpeechDaatasets](https://github.com/lucasondel/SpeechDatasets.jl) is a
+[SpeechDatasets](https://github.com/lucasondel/SpeechDatasets.jl) is a
 [Julia](https://julialang.org/) package to prepare speech corpora for
 training speech machine learning system. This package particularly
 focuses on low-resource language.
